@@ -8,19 +8,20 @@ import org.bukkit.entity.Player;
 public class Permissions {
 
     public static final String
-            KICK = Register.command + ".kick",
-            ADMIN = Register.command + ".admin",
-            NOTIFICATIONS = Register.command + ".notifications",
-            VERBOSE = Register.command + ".verbose",
-            BYPASS = Register.command + ".bypass",
-            RELOAD = Register.command + ".reload",
-            TOGGLE = Register.command + ".toggle",
-            ENABLE = Register.command + ".enable",
-            DISABLE = Register.command + ".disable",
-            PANIC = Register.command + ".panic",
-            PUNISH = Register.command + ".punish";
+            KICK = Register.getCommand() + ".kick",
+            ADMIN = Register.getCommand() + ".admin",
+            NOTIFICATIONS = Register.getCommand() + ".notifications",
+            VERBOSE = Register.getCommand() + ".verbose",
+            BYPASS = Register.getCommand() + ".bypass",
+            RELOAD = Register.getCommand() + ".reload",
+            TOGGLE = Register.getCommand() + ".toggle",
+            ENABLE = Register.getCommand() + ".enable",
+            DISABLE = Register.getCommand() + ".disable",
+            PANIC = Register.getCommand() + ".panic",
+            PUNISH = Register.getCommand() + ".punish",
+            DELETE = Register.getCommand() + ".delete";
 
-    public static final String[] keys = new String[]{
+    public static final String[] LIST = new String[]{
             KICK,
             ADMIN,
             NOTIFICATIONS,
@@ -31,11 +32,12 @@ public class Permissions {
             ENABLE,
             DISABLE,
             PANIC,
-            PUNISH
+            PUNISH,
+            DELETE
     };
 
     public static boolean hasAny(Player p) {
-        for (String key : keys) {
+        for (String key : LIST) {
             if (p.hasPermission(key)) {
                 return true;
             }

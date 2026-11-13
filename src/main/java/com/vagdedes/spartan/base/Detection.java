@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Detection {
 
-    private static boolean panic = false;
     public static final int maxCommands = 10;
     private static final File
             file = new File(
@@ -22,17 +21,8 @@ public class Detection {
 
     private static final List<String> defaultPunishments = new ArrayList<>(Detection.maxCommands);
 
-    public static void setPanic(boolean panic) {
-        Detection.panic = panic;
-        ConfigManagement.create();
-    }
-
-    public static boolean getPanic() {
-        return Detection.panic;
-    }
-
     static {
-        defaultPunishments.add(Register.command + " kick {player} {detection:name}");
+        defaultPunishments.add(Register.getCommand() + " kick {player} {detection:name}");
 
         for (int position = (defaultPunishments.size() + 1); position <= Detection.maxCommands; position++) {
             defaultPunishments.add("");
@@ -46,9 +36,7 @@ public class Detection {
     private final Map<String, Object> options;
     public final boolean handleCancelledEvents;
     private boolean enabled, punish;
-    private final Set<String>
-            disabledWorlds,
-            silentWorlds;
+    private final Set<String> disabledWorlds;
     private Collection<String> punishments;
 
     // Config values may be booleans, numbers or text, and numbers must not be cast directly as the exact type is unknown
@@ -78,6 +66,11 @@ public class Detection {
                 true,
                 false
         ) == Boolean.TRUE;
+        this.handleCancelledEvents = getOption(
+                "handle_cancelled_events",
+                true,
+                false
+        ) == Boolean.TRUE;
 
         // Separator
 
@@ -91,13 +84,8 @@ public class Detection {
         this.setName(this.name);
 
         // Separator
-        String worlds_config = getOption("disabled_worlds", "exampleDisabledWorld1, exampleDisabledWorld2", false).toString(),
-                silents_config = getOption("silent_worlds", "exampleSilentWorld1, exampleSilentWorld2", false).toString();
 
-        this.handleCancelledEvents = handleCancelledEvents != null
-                && toBoolean(handleCancelledEvents);
-
-        // Separator
+        String worlds_config = getOption("disabled_worlds", "exampleDisabledWorld1, exampleDisabledWorld2", false).toString();
 
         if (worlds_config != null) {
             String[] worldsSplit = worlds_config.split(",");
@@ -125,33 +113,6 @@ public class Detection {
             this.disabledWorlds = new HashSet<>(0);
         }
 
-        // Separator
-
-        if (silents_config != null) {
-            String[] worldsSplit = silents_config.split(",");
-            int size = worldsSplit.length;
-
-            if (size > 0) {
-                Set<String> set = new HashSet<>(size);
-
-                for (String world : worldsSplit) {
-                    world = world.replace(" ", "");
-
-                    if (!world.isEmpty()) {
-                        set.add(world.toLowerCase());
-                    }
-                }
-                if (!set.isEmpty()) {
-                    this.silentWorlds = set;
-                } else {
-                    this.silentWorlds = new HashSet<>(0);
-                }
-            } else {
-                this.silentWorlds = new HashSet<>(0);
-            }
-        } else {
-            this.silentWorlds = new HashSet<>(0);
-        }
 
         // Separator
 
@@ -176,7 +137,6 @@ public class Detection {
         if (this.enabled != b) {
             this.enabled = b;
             setOption("enabled", b);
-            options.clear();
             return true;
         } else {
             return false;
@@ -203,78 +163,45 @@ public class Detection {
 
     // Separator
 
-    private void setOption(String option, Object value) {
+    private void setOptionRaw(YamlConfiguration configuration, String option, Object value) {
         try {
-            String key = this.hackType + "." + option;
-            YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-            configuration.set(key, value);
+            option = this.realName + "." + option;
+            configuration.set(option, value);
 
             try {
                 configuration.save(file);
-                options.remove(key); // Remove instead of modifying to be on demand and have the chance to catch changes by the user
+                options.put(option, value);
             } catch (Exception ex) {
-                AwarenessNotifications.forcefullySend("Failed to store '" + key + "' option in '" + file.getName() + "' file.");
-                ex.printStackTrace();
+                Register.notify("Could not save option '" + option + "' in file '" + file.getName() + "': " + ex.getMessage());
             }
             return;
         } catch (Exception ex) {
-            AwarenessNotifications.forcefullySend("Failed to find/create the '" + file.getName() + "' file.");
-            ex.printStackTrace();
+            Register.notify("Failed to find/create the '" + file.getName() + "' file.");
         }
-        AwarenessNotifications.forcefullySend("Failed to find/create the '" + file.getName() + "' file.");
+        Register.notify("Failed to find/create the '" + file.getName() + "' file.");
+    }
+
+    private void setOption(String option, Object value) {
+        YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+        setOptionRaw(configuration, option, value);
     }
 
     private Object getOption(String option, Object def, boolean cache) {
-        if (cache) {
-            Object cached = options.get(option);
-
-            if (cached != null) {
-                return cached;
-            }
+        if (cache && options.containsKey(option)) {
+            return options.get(option);
         }
         try {
-            String key = this.hackType + "." + option;
-            boolean isDefaultNull = def == null;
-            File file = cache ? advancedFile : Detection.file;
+            String key = this.realName + "." + option;
             YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 
-            if (cache) {
-                if (configuration.contains(key)) {
-                    Object value = configuration.get(key, def);
-
-                    if (!isDefaultNull) {
-                        options.put(option, value);
-                    }
-                    return value;
-                }
-                if (!isDefaultNull) {
-                    configuration.set(key, def);
-
-                    try {
-                        configuration.save(file);
-                        options.put(option, def);
-                    } catch (Exception ex) {
-                        AwarenessNotifications.forcefullySend("Failed to store '" + key + "' option in '" + file.getName() + "' file.");
-                        ex.printStackTrace();
-                    }
-                }
-            } else {
-                if (configuration.contains(key)) {
-                    return configuration.get(key, def);
-                } else if (!isDefaultNull) {
-                    configuration.set(key, def);
-
-                    try {
-                        configuration.save(file);
-                    } catch (Exception ex) {
-                        AwarenessNotifications.forcefullySend("Failed to store '" + key + "' option in '" + file.getName() + "' file.");
-                        ex.printStackTrace();
-                    }
-                }
+            if (configuration.contains(key)) {
+                Object value = configuration.get(key, def);
+                options.put(option, value);
+                return value;
             }
+            setOptionRaw(configuration, option, def);
         } catch (Exception ex) {
-            AwarenessNotifications.forcefullySend("Failed to find/create the '" + file.getName() + "' file.");
-            ex.printStackTrace();
+            Register.notify("Failed to find/create the '" + file.getName() + "' file.");
         }
         return def;
     }
@@ -282,65 +209,11 @@ public class Detection {
     // Separator
 
     public boolean canPunish() {
-        return !panic && this.punish;
+        return !Register.getPanic() && this.punish;
     }
 
-    // Separator
-
-    public boolean isSilent(Detection.DataType dataType, String world) {
-        if (panic
-                || world != null && silentWorlds.contains(world.toLowerCase())) {
-            return true;
-        }
-        if (dataType == null) {
-            for (Detection.DataType type : DataType.values()) {
-                if (this.silent[type.ordinal()]) {
-                    return true;
-                }
-            }
-            return false;
-        } else return this.silent[dataType.ordinal()];
-    }
-
-    public void setSilent(Detection.DataType dataType, boolean b) {
-        Detection.DataType[] dataTypes;
-
-        if (dataType == null) {
-            dataTypes = DataType.values();
-        } else {
-            dataTypes = null;
-
-            for (Detection.DataType type : DataType.values()) {
-                if (type == dataType) {
-                    dataTypes = new Detection.DataType[]{dataType};
-                    break;
-                }
-            }
-
-            if (dataTypes == null) {
-                return;
-            }
-        }
-        for (Detection.DataType type : dataTypes) {
-            CheckSilentToggleEvent event;
-
-            if (ConfigManagement.settings.getBoolean("Important.enable_developer_api")) {
-                event = new CheckSilentToggleEvent(this.hackType, b ? ToggleAction.ENABLE : ToggleAction.DISABLE);
-                Bukkit.getPluginManager().callEvent(event);
-            } else {
-                event = null;
-            }
-
-            if (event == null || !event.isCancelled()) {
-                this.silent[type.ordinal()] = b;
-                setOption("silent." + type.toString().toLowerCase(), b);
-                options.clear();
-            }
-        }
-    }
-
-    public List<String> getPunishmentCommands() {
-        return new ArrayList<>(this.punishments);
+    public Collection<String> getPunishmentCommands(boolean clone) {
+        return clone ? new ArrayList<>(this.punishments) : this.punishments;
     }
 
     private void calculatePunishmentCommands() {
@@ -381,29 +254,13 @@ public class Detection {
         }
     }
 
-    public void setPunish(Detection.DataType dataType, boolean b) {
-        Detection.DataType[] dataTypes;
-
-        if (dataType == null) {
-            dataTypes = DataType.values();
+    public boolean setPunish(boolean b) {
+        if (this.punish != b) {
+            this.punish = b;
+            setOption("punishments.enabled", b);
+            return true;
         } else {
-            dataTypes = new Detection.DataType[]{dataType};
-        }
-        for (Detection.DataType type : dataTypes) {
-            CheckPunishmentToggleEvent event;
-
-            if (ConfigManagement.settings.getBoolean("Important.enable_developer_api")) {
-                event = new CheckPunishmentToggleEvent(this.hackType, b ? ToggleAction.ENABLE : ToggleAction.DISABLE);
-                Bukkit.getPluginManager().callEvent(event);
-            } else {
-                event = null;
-            }
-
-            if (event == null || !event.isCancelled()) {
-                this.punish[type.ordinal()] = b;
-                setOption("punishments.enabled." + type.toString().toLowerCase(), b);
-                options.clear();
-            }
+            return false;
         }
     }
 

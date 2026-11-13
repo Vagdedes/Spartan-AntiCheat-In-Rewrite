@@ -5,6 +5,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.Permission;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -35,18 +36,8 @@ public class TabCompletion implements TabCompleter {
                 if (!isPlayer) {
                     add = true;
                 } else {
-                    add = false;
-
-                    if (entry.getValue().length > 0) {
-                        for (Permission permission : entry.getValue()) {
-                            if (Permissions.has(p, permission)) {
-                                add = true;
-                                break;
-                            }
-                        }
-                    } else {
-                        add = Permissions.has(p, Permission.ADMIN);
-                    }
+                    add = p.hasPermission(entry.getValue())
+                            || p.hasPermission(Permissions.ADMIN);
                 }
 
                 if (add) {

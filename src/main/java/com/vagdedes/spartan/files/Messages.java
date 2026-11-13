@@ -64,7 +64,7 @@ public class Messages extends ConfigBuilder {
                 && !string.contains(prefix)) {
             string = "§4§l(" + prefix + ")§r " + string;
         }
-        string = string.replace(prefix, Register.pluginName);
+        string = string.replace(prefix, Register.getBukkitName());
         return string;
     }
 

@@ -12,7 +12,7 @@ public class Commands implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         boolean isPlayer = sender instanceof Player;
 
-        if (label.equalsIgnoreCase(Register.command)
+        if (label.equalsIgnoreCase(Register.getCommand())
                 && (isPlayer || sender instanceof ConsoleCommandSender)) {
             Player player = isPlayer ? (Player) sender : null;
 

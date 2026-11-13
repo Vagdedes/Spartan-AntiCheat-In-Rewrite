@@ -48,7 +48,7 @@ public class Discord {
                 String safeTitle = escapeJson(truncate(Register.plugin + " AntiCheat" + titleSuffix, 256));
                 String jsonPayload = "{"
                         + "\"username\": \"Spartan AntiCheat\","
-                        + "\"avatar_url\": \"https://vagdedes.com/.images/spartan/logo.png\","
+                        + "\"avatar_url\": \"https://vagdedes.com/.images/" + Register.getCommand() + "/logo.png\","
                         + "\"embeds\": [{"
                         + "\"color\": " + colorDecimal + ","
                         + "\"author\": {"
@@ -77,11 +77,11 @@ public class Discord {
 
                 if (responseCode < 200
                         || responseCode > 299) {
-                    Bukkit.getConsoleSender().sendMessage("[Spartan] Webhook failed response code: "  + responseCode);
+                    Register.notify("Webhook failed response code: " + responseCode);
                 }
 
             } catch (Exception e) {
-                Bukkit.getConsoleSender().sendMessage("[Spartan] Webhook error: "  + e.getMessage());
+                Register.notify("Webhook error: " + e.getMessage());
             }
         });
     }
