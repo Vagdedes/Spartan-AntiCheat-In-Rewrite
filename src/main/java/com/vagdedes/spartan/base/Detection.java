@@ -3,9 +3,11 @@ package com.vagdedes.spartan.base;
 import com.vagdedes.spartan.Register;
 import com.vagdedes.spartan.files.ConfigManagement;
 import com.vagdedes.spartan.math.NumberConversions;
+import com.vagdedes.spartan.support.Permissions;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.*;
@@ -71,17 +73,7 @@ public class Detection {
                 true,
                 false
         ) == Boolean.TRUE;
-
-        // Separator
-
-        if (this.name != null) {
-            if (this.name.length() > 32) {
-                this.name = this.name.substring(0, 32);
-            }
-        } else {
-            this.name = name;
-        }
-        this.setName(this.name);
+        this.setName(name);
 
         // Separator
 
@@ -112,7 +104,6 @@ public class Detection {
         } else {
             this.disabledWorlds = new HashSet<>(0);
         }
-
 
         // Separator
 
@@ -150,9 +141,11 @@ public class Detection {
             name = name.substring(0, 32);
         }
         for (Detection detection : Detections.LIST) {
-            if (detection.getName().equalsIgnoreCase(this.name)
-                    || detection.realName.equalsIgnoreCase(this.name)) {
+            if (detection != this
+                    && (detection.getName().equalsIgnoreCase(this.name)
+                    || detection.realName.equalsIgnoreCase(this.name))) {
                 this.name = realName;
+                Register.notify("The name '" + name + "' is already in use by the detection: " + detection.getName());
                 return false;
             }
         }
@@ -174,11 +167,9 @@ public class Detection {
             } catch (Exception ex) {
                 Register.notify("Could not save option '" + option + "' in file '" + file.getName() + "': " + ex.getMessage());
             }
-            return;
         } catch (Exception ex) {
             Register.notify("Failed to find/create the '" + file.getName() + "' file.");
         }
-        Register.notify("Failed to find/create the '" + file.getName() + "' file.");
     }
 
     private void setOption(String option, Object value) {
@@ -204,6 +195,12 @@ public class Detection {
             Register.notify("Failed to find/create the '" + file.getName() + "' file.");
         }
         return def;
+    }
+
+    // Separator
+
+    public boolean isPlayerBypassing(Player player) {
+        return Permissions.isBypassing(player, this);
     }
 
     // Separator

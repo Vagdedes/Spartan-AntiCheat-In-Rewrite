@@ -52,7 +52,7 @@ public class Permissions {
             if (p.hasPermission(BYPASS)) {
                 return true;
             } else if (detection != null) {
-                return p.hasPermission(BYPASS + "." + detection.realName);
+                return p.hasPermission(BYPASS + "." + detection.realName.toLowerCase());
             } else {
                 return false;
             }
