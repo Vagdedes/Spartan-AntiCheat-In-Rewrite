@@ -41,17 +41,6 @@ public class Detection {
     private final Set<String> disabledWorlds;
     private Collection<String> punishments;
 
-    // Config values may be booleans, numbers or text, and numbers must not be cast directly as the exact type is unknown
-    private static boolean toBoolean(Object value) {
-        if (value instanceof Boolean) {
-            return (Boolean) value;
-        } else if (value instanceof Number) {
-            return ((Number) value).doubleValue() > 0.0;
-        } else {
-            return Boolean.parseBoolean(value.toString().toLowerCase());
-        }
-    }
-
     // Object Methods
 
     public Detection(String name) {
@@ -107,7 +96,41 @@ public class Detection {
 
         // Separator
 
-        calculatePunishmentCommands();
+        String sectionString = realName + ".punishments.commands";
+        YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+
+        if (!configuration.contains(sectionString)) {
+            for (int position = 0; position < defaultPunishments.size(); position++) {
+                ConfigManagement.add(file, sectionString + "." + (position + 1), defaultPunishments.get(position));
+            }
+        }
+        ConfigurationSection section = configuration.getConfigurationSection(sectionString);
+
+        if (section != null) {
+            Collection<String> list = new ArrayList<>();
+            Set<String> keys = section.getKeys(true);
+
+            if (!keys.isEmpty()) {
+                sectionString += ".";
+
+                for (String key : keys) {
+                    if (NumberConversions.validInteger(key)) {
+                        int number = Integer.parseInt(key);
+
+                        if (number >= 1 && number <= Detection.maxCommands) {
+                            String command = configuration.getString(sectionString + number);
+
+                            if (command != null && !command.isEmpty()) {
+                                list.add(command);
+                            }
+                        }
+                    }
+                }
+            }
+            this.punishments = list;
+        } else {
+            this.punishments = new ArrayList<>(0);
+        }
     }
 
     // Separator
@@ -213,44 +236,6 @@ public class Detection {
         return clone ? new ArrayList<>(this.punishments) : this.punishments;
     }
 
-    private void calculatePunishmentCommands() {
-        String sectionString = realName + ".punishments.commands";
-        YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-
-        if (!configuration.contains(sectionString)) {
-            for (int position = 0; position < defaultPunishments.size(); position++) {
-                ConfigManagement.add(file, sectionString + "." + (position + 1), defaultPunishments.get(position));
-            }
-        }
-        ConfigurationSection section = configuration.getConfigurationSection(sectionString);
-
-        if (section != null) {
-            Collection<String> list = new ArrayList<>();
-            Set<String> keys = section.getKeys(true);
-
-            if (!keys.isEmpty()) {
-                sectionString += ".";
-
-                for (String key : keys) {
-                    if (NumberConversions.validInteger(key)) {
-                        int number = Integer.parseInt(key);
-
-                        if (number >= 1 && number <= Detection.maxCommands) {
-                            String command = configuration.getString(sectionString + number);
-
-                            if (command != null && !command.isEmpty()) {
-                                list.add(command);
-                            }
-                        }
-                    }
-                }
-            }
-            this.punishments = list;
-        } else {
-            this.punishments = new ArrayList<>(0);
-        }
-    }
-
     public boolean setPunish(boolean b) {
         if (this.punish != b) {
             this.punish = b;
@@ -259,6 +244,11 @@ public class Detection {
         } else {
             return false;
         }
+    }
+
+    public boolean run(Runnable runnable) {
+        runnable.run();
+        return true;
     }
 
 }

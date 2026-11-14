@@ -1,7 +1,6 @@
 package com.vagdedes.spartan.support;
 
 import com.vagdedes.spartan.files.ConfigManagement;
-import com.vagdedes.spartan.math.java.ReflectionUtils;
 import org.bukkit.entity.Player;
 import org.geysermc.floodgate.api.FloodgateApi;
 
@@ -14,9 +13,14 @@ public class Floodgate {
     }
 
     public static void reload() {
-        classExists = ReflectionUtils.classExists(
-                "org.geysermc.floodgate.api.FloodgateApi"
-        );
+        try {
+            Class.forName(
+                    "org.geysermc.floodgate.api.FloodgateApi"
+            );
+            classExists = true;
+        } catch (ClassNotFoundException e) {
+            classExists = false;
+        }
     }
 
     public static boolean isBedrockPlayer(Player player) {

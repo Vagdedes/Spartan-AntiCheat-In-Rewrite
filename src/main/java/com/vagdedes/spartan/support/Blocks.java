@@ -16,7 +16,8 @@ public class Blocks {
 
     static {
         try {
-            blockDataExists = Class.forName("org.bukkit.block.data.BlockData") != null;
+            Class.forName("org.bukkit.block.data.BlockData");
+            blockDataExists = true;
         } catch (ClassNotFoundException e) {
             blockDataExists = false;
         }
